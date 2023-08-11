@@ -52,13 +52,26 @@ export class OIDCStrategy<User> extends Strategy<
 		super(verify);
 	}
 
+	private getCallbackURL(url: URL) {
+		if (
+			this.options.redirect_uri.startsWith("http:") ||
+			this.options.redirect_uri.startsWith("https:")
+		) {
+			return new URL(this.options.redirect_uri);
+		}
+		if (this.options.redirect_uri.startsWith("/")) {
+			return new URL(this.options.redirect_uri, url);
+		}
+		return new URL(`${url.protocol}//${this.options.redirect_uri}`);
+	}
+
 	async authenticate(
 		request: Request,
 		sessionStorage: SessionStorage<SessionData, SessionData>,
 		options: AuthenticateOptions,
 	): Promise<User> {
 		let url = new URL(request.url);
-		let redirectURL = new URL(this.options.redirect_uri);
+		let redirectURL = this.getCallbackURL(new URL(request.url));
 
 		if (url.pathname !== redirectURL.pathname) {
 			let state = Generator.state();
